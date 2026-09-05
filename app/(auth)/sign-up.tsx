@@ -125,7 +125,7 @@ export default function SignUpScreen() {
       } else {
         setResendMessage("Verification code resent to your email.");
       }
-    } catch (err: any) {
+    } catch {
       setError("Failed to resend verification code.");
     } finally {
       setResending(false);
