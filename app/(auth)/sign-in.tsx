@@ -14,6 +14,8 @@ import {
 import { styled } from "nativewind";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 
+import { posthog } from "@/lib/posthog";
+
 const SafeAreaView = styled(RNSafeAreaView);
 
 export default function SignInScreen() {
@@ -61,6 +63,7 @@ export default function SignInScreen() {
           setError(finalizeError.message || "Failed to finalize session.");
           return;
         }
+        posthog?.capture("sign_in_completed", { method: "password" });
         router.replace("/(tabs)");
       } else if (
         signIn.status === "needs_second_factor" ||
@@ -128,6 +131,7 @@ export default function SignInScreen() {
           return;
         }
 
+        posthog?.capture("sign_in_completed", { method: "email_code" });
         router.replace("/(tabs)");
       } else {
         setError("Verification requires additional steps.");
