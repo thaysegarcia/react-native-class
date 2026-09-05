@@ -66,6 +66,18 @@ export default function SignInScreen() {
         signIn.status === "needs_second_factor" ||
         signIn.status === "needs_client_trust"
       ) {
+        const supportedFactors = (signIn as any).supportedSecondFactors;
+        if (
+          supportedFactors &&
+          Array.isArray(supportedFactors) &&
+          !supportedFactors.some((factor: any) => factor.strategy === "email_code")
+        ) {
+          setError(
+            "Second factor verification requires an unsupported authentication strategy."
+          );
+          return;
+        }
+
         const { error: sendError } = await signIn.mfa.sendEmailCode();
         if (sendError) {
           setError(sendError.message || "Failed to send verification code.");
@@ -238,10 +250,14 @@ export default function SignInScreen() {
                 <Pressable
                   className="mt-2 items-center"
                   onPress={() => {
+                    if (typeof (signIn as any)?.reset === "function") {
+                      (signIn as any).reset();
+                    }
                     setIsVerifying(false);
                     setCode("");
                     setError("");
                     setResendMessage("");
+                    setResending(false);
                   }}
                   disabled={loading}
                 >
