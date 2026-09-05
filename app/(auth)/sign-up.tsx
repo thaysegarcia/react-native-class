@@ -1,4 +1,4 @@
-import { useAuth, useSignIn } from "@clerk/expo";
+import { useAuth, useSignUp } from "@clerk/expo";
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -16,9 +16,9 @@ import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 
 const SafeAreaView = styled(RNSafeAreaView);
 
-export default function SignInScreen() {
+export default function SignUpScreen() {
   const { isLoaded } = useAuth();
-  const { signIn } = useSignIn();
+  const { signUp } = useSignUp();
   const router = useRouter();
 
   const [emailAddress, setEmailAddress] = useState("");
@@ -30,7 +30,7 @@ export default function SignInScreen() {
   const [resending, setResending] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
 
-  const onSignInPress = async () => {
+  const onSignUpPress = async () => {
     if (!isLoaded) return;
 
     if (!emailAddress.trim() || !password) {
@@ -42,57 +42,29 @@ export default function SignInScreen() {
     setError("");
 
     try {
-      const { error: signInError } = await signIn.password({
-        identifier: emailAddress.trim(),
+      const { error: signUpError } = await signUp.password({
+        emailAddress: emailAddress.trim(),
         password,
       });
 
-      if (signInError) {
-        setError(
-          signInError.message ||
-            "Failed to sign in. Please check your credentials."
-        );
+      if (signUpError) {
+        setError(signUpError.message || "Failed to sign up.");
         return;
       }
 
-      if (signIn.status === "complete") {
-        const { error: finalizeError } = await signIn.finalize();
-        if (finalizeError) {
-          setError(finalizeError.message || "Failed to finalize session.");
-          return;
-        }
-        router.replace("/(tabs)");
-      } else if (
-        signIn.status === "needs_second_factor" ||
-        signIn.status === "needs_client_trust"
-      ) {
-        const supportedFactors = (signIn as any).supportedSecondFactors;
-        if (
-          supportedFactors &&
-          Array.isArray(supportedFactors) &&
-          !supportedFactors.some((factor: any) => factor.strategy === "email_code")
-        ) {
-          setError(
-            "Second factor verification requires an unsupported authentication strategy."
-          );
-          return;
-        }
-
-        const { error: sendError } = await signIn.mfa.sendEmailCode();
-        if (sendError) {
-          setError(sendError.message || "Failed to send verification code.");
-          return;
-        }
-        setIsVerifying(true);
-      } else {
-        setError("Sign in requires additional verification.");
+      const { error: sendError } = await signUp.verifications.sendEmailCode();
+      if (sendError) {
+        setError(sendError.message || "Failed to send verification code.");
+        return;
       }
+
+      setIsVerifying(true);
     } catch (err: any) {
       const errorMsg =
         err?.errors?.[0]?.longMessage ||
         err?.errors?.[0]?.message ||
         err?.message ||
-        "Failed to sign in. Please check your credentials.";
+        "Failed to sign up. Please try again.";
       setError(errorMsg);
     } finally {
       setLoading(false);
@@ -112,7 +84,7 @@ export default function SignInScreen() {
     setResendMessage("");
 
     try {
-      const { error: verifyError } = await signIn.mfa.verifyEmailCode({
+      const { error: verifyError } = await signUp.verifications.verifyEmailCode({
         code: code.trim(),
       });
 
@@ -121,17 +93,13 @@ export default function SignInScreen() {
         return;
       }
 
-      if (signIn.status === "complete") {
-        const { error: finalizeError } = await signIn.finalize();
-        if (finalizeError) {
-          setError(finalizeError.message || "Failed to finalize session.");
-          return;
-        }
-
-        router.replace("/(tabs)");
-      } else {
-        setError("Verification requires additional steps.");
+      const { error: finalizeError } = await signUp.finalize();
+      if (finalizeError) {
+        setError(finalizeError.message || "Failed to finalize session.");
+        return;
       }
+
+      router.replace("/(tabs)");
     } catch (err: any) {
       const errorMsg =
         err?.errors?.[0]?.longMessage ||
@@ -151,7 +119,7 @@ export default function SignInScreen() {
     setResendMessage("");
 
     try {
-      const { error: sendError } = await signIn.mfa.sendEmailCode();
+      const { error: sendError } = await signUp.verifications.sendEmailCode();
       if (sendError) {
         setError(sendError.message || "Failed to resend code.");
       } else {
@@ -186,12 +154,12 @@ export default function SignInScreen() {
               </View>
             </View>
             <Text className="auth-title">
-              {isVerifying ? "Verify Your Identity" : "Welcome back"}
+              {isVerifying ? "Verify Email" : "Create Account"}
             </Text>
             <Text className="auth-subtitle">
               {isVerifying
                 ? `Enter the verification code sent to ${emailAddress}`
-                : "Sign in to manage and track all your recurring subscriptions."}
+                : "Start tracking and optimizing all your recurring subscriptions."}
             </Text>
           </View>
 
@@ -216,9 +184,7 @@ export default function SignInScreen() {
 
                 {error ? <Text className="auth-error">{error}</Text> : null}
                 {resendMessage ? (
-                  <Text className="auth-helper text-center">
-                    {resendMessage}
-                  </Text>
+                  <Text className="auth-helper text-center">{resendMessage}</Text>
                 ) : null}
 
                 <Pressable
@@ -250,18 +216,13 @@ export default function SignInScreen() {
                 <Pressable
                   className="mt-2 items-center"
                   onPress={() => {
-                    if (typeof (signIn as any)?.reset === "function") {
-                      (signIn as any).reset();
-                    }
                     setIsVerifying(false);
-                    setCode("");
                     setError("");
                     setResendMessage("");
-                    setResending(false);
                   }}
                   disabled={loading}
                 >
-                  <Text className="auth-link">Back to Sign In</Text>
+                  <Text className="auth-link">Back to Sign Up</Text>
                 </Pressable>
               </View>
             ) : (
@@ -290,7 +251,7 @@ export default function SignInScreen() {
                     className={`auth-input ${error ? "auth-input-error" : ""}`}
                     secureTextEntry
                     autoCapitalize="none"
-                    placeholder="Enter your password"
+                    placeholder="Create a strong password"
                     placeholderTextColor="#9ca3af"
                     value={password}
                     onChangeText={(text) => {
@@ -305,26 +266,26 @@ export default function SignInScreen() {
 
                 <Pressable
                   className={`auth-button ${loading ? "auth-button-disabled" : ""}`}
-                  onPress={onSignInPress}
+                  onPress={onSignUpPress}
                   disabled={loading}
                 >
                   {loading ? (
                     <ActivityIndicator color="#0f172a" />
                   ) : (
-                    <Text className="auth-button-text">Sign In</Text>
+                    <Text className="auth-button-text">Sign Up</Text>
                   )}
                 </Pressable>
+
+                <View nativeID="clerk-captcha" />
               </View>
             )}
 
             {!isVerifying && (
               <View className="auth-link-row">
-                <Text className="auth-link-copy">
-                  Don&apos;t have an account?
-                </Text>
-                <Link href="/(auth)/sign-up" asChild>
+                <Text className="auth-link-copy">Already have an account?</Text>
+                <Link href="/(auth)/sign-in" asChild>
                   <Pressable disabled={loading}>
-                    <Text className="auth-link">Sign up</Text>
+                    <Text className="auth-link">Sign in</Text>
                   </Pressable>
                 </Link>
               </View>
