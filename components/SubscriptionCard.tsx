@@ -1,11 +1,11 @@
-import { View, Text, Image, Pressable } from "react-native";
+import { View, Text, Image, Pressable, TouchableOpacity } from "react-native";
 import React from "react";
 import {
   formatCurrency,
   formatStatusLabel,
   formatSubscriptionDateTime,
 } from "@/lib/utils";
-import clsx from "clsx";
+import { clsx } from "clsx";
 
 const SubscriptionCard = ({
   name,
@@ -22,6 +22,10 @@ const SubscriptionCard = ({
   onPress,
   paymentMethod,
   status,
+  onModifyPlan,
+  onModifyCard,
+  onCancelPress,
+  isCancelling,
 }: SubscriptionCardProps) => {
   const fallback = "Not provided";
   return (
@@ -53,9 +57,36 @@ const SubscriptionCard = ({
       {expanded && (
         <View className="sub-body">
           <View className="sub-details">
+            {/* Plan Row */}
             <View className="sub-row">
               <View className="sub-row-copy">
-                <Text className="sub-label">Payment:</Text>
+                <Text className="sub-label">Plan:</Text>
+                <Text
+                  className="sub-value"
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {plan?.trim() ?? fallback}
+                </Text>
+              </View>
+              {onModifyPlan && (
+                <TouchableOpacity
+                  onPress={onModifyPlan}
+                  className="rounded-full border border-primary px-3 py-1"
+                  accessibilityRole="button"
+                  accessibilityLabel="Modify Plan"
+                >
+                  <Text className="text-xs font-sans-semibold text-primary">
+                    Modify
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Card / Payment Row */}
+            <View className="sub-row">
+              <View className="sub-row-copy">
+                <Text className="sub-label">Card:</Text>
                 <Text
                   className="sub-value"
                   numberOfLines={1}
@@ -64,7 +95,21 @@ const SubscriptionCard = ({
                   {paymentMethod?.trim() ?? fallback}
                 </Text>
               </View>
+              {onModifyCard && (
+                <TouchableOpacity
+                  onPress={onModifyCard}
+                  className="rounded-full border border-primary px-3 py-1"
+                  accessibilityRole="button"
+                  accessibilityLabel="Modify Card"
+                >
+                  <Text className="text-xs font-sans-semibold text-primary">
+                    Modify
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
+
+            {/* Category Row */}
             <View className="sub-row">
               <View className="sub-row-copy">
                 <Text className="sub-label">Category:</Text>
@@ -73,10 +118,12 @@ const SubscriptionCard = ({
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
-                  {(category?.trim() || plan?.trim()) ?? fallback}
+                  {category?.trim() ?? fallback}
                 </Text>
               </View>
             </View>
+
+            {/* Started Row */}
             <View className="sub-row">
               <View className="sub-row-copy">
                 <Text className="sub-label">Started:</Text>
@@ -89,6 +136,8 @@ const SubscriptionCard = ({
                 </Text>
               </View>
             </View>
+
+            {/* Renewal Date Row */}
             <View className="sub-row">
               <View className="sub-row-copy">
                 <Text className="sub-label">Renewal Date:</Text>
@@ -103,6 +152,8 @@ const SubscriptionCard = ({
                 </Text>
               </View>
             </View>
+
+            {/* Status Row */}
             <View className="sub-row">
               <View className="sub-row-copy">
                 <Text className="sub-label">Status:</Text>
@@ -111,11 +162,29 @@ const SubscriptionCard = ({
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
-                  {status ? formatStatusLabel(renewalDate) : fallback}
+                  {status ? formatStatusLabel(status) : fallback}
                 </Text>
               </View>
             </View>
           </View>
+
+          {/* Cancel Subscription Button */}
+          {onCancelPress && (
+            <TouchableOpacity
+              onPress={onCancelPress}
+              disabled={isCancelling}
+              className={clsx(
+                "sub-cancel",
+                isCancelling && "sub-cancel-disabled"
+              )}
+              accessibilityRole="button"
+              accessibilityLabel="Cancel Subscription"
+            >
+              <Text className="sub-cancel-text">
+                {isCancelling ? "Cancelling..." : "Cancel Subscription"}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
     </Pressable>

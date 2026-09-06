@@ -14,6 +14,8 @@ import {
 import { styled } from "nativewind";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 
+import { posthog } from "@/lib/posthog";
+
 const SafeAreaView = styled(RNSafeAreaView);
 
 export default function SignUpScreen() {
@@ -99,6 +101,7 @@ export default function SignUpScreen() {
         return;
       }
 
+      posthog?.capture("sign_up_completed", { method: "email_code" });
       router.replace("/(tabs)");
     } catch (err: any) {
       const errorMsg =
