@@ -26,6 +26,7 @@ function IdentifyUser() {
 
   useEffect(() => {
     if (!user) {
+      posthog?.reset();
       identifiedUserId.current = undefined;
       return;
     }

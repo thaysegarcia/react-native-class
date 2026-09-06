@@ -23,6 +23,11 @@ const SafeAreaView = styled(RNSafeAreaView);
 
 export default function App() {
   const { user } = useUser();
+  const [subscriptions, setSubscriptions] =
+    useState<Subscription[]>(HOME_SUBSCRIPTIONS);
+  const [cancellingSubscriptionId, setCancellingSubscriptionId] = useState<
+    string | null
+  >(null);
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<
     string | null
   >(null);
@@ -108,6 +113,15 @@ export default function App() {
               subscription_id: subscription.id,
               subscription_name: subscription.name,
             });
+            setCancellingSubscriptionId(subscription.id);
+            setSubscriptions((prev) =>
+              prev.map((sub) =>
+                sub.id === subscription.id
+                  ? { ...sub, status: "cancelled" }
+                  : sub
+              )
+            );
+            setCancellingSubscriptionId(null);
             Alert.alert(
               "Subscription Cancelled",
               `Your ${subscription.name} subscription has been cancelled.`
@@ -168,15 +182,18 @@ export default function App() {
             <ListHeading title="All Subscriptions" />
           </>
         }
-        data={HOME_SUBSCRIPTIONS}
+        data={subscriptions}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <SubscriptionCard
             {...item}
             expanded={expandedSubscriptionId === item.id}
+            isCancelling={cancellingSubscriptionId === item.id}
             onPress={() => {
               const isExpanded = expandedSubscriptionId === item.id;
               posthog?.capture("subscription_details_toggled", {
+                subscription_id: item.id,
+                subscription_name: item.name,
                 expanded: !isExpanded,
                 billing_frequency: item.billing,
                 category: item.category ?? null,

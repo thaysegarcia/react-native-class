@@ -21,8 +21,13 @@ import { posthog } from "@/lib/posthog";
 const SafeAreaView = styled(RNSafeAreaView);
 
 const Subscriptions = () => {
+  const [subscriptions, setSubscriptions] =
+    useState<Subscription[]>(HOME_SUBSCRIPTIONS);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [cancellingSubscriptionId, setCancellingSubscriptionId] = useState<
+    string | null
+  >(null);
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<
     string | null
   >(null);
@@ -38,17 +43,17 @@ const Subscriptions = () => {
   const categories = useMemo(() => {
     const unique = Array.from(
       new Set(
-        HOME_SUBSCRIPTIONS.map((item) => item.category).filter(
-          (c): c is string => Boolean(c)
-        )
+        subscriptions
+          .map((item) => item.category)
+          .filter((c): c is string => Boolean(c))
       )
     );
     return ["All", ...unique];
-  }, []);
+  }, [subscriptions]);
 
   const filteredSubscriptions = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    return HOME_SUBSCRIPTIONS.filter((item) => {
+    return subscriptions.filter((item) => {
       const matchesCategory =
         selectedCategory === "All" || item.category === selectedCategory;
       if (!matchesCategory) return false;
@@ -60,13 +65,15 @@ const Subscriptions = () => {
       const planMatch = item.plan?.toLowerCase().includes(query) ?? false;
       return nameMatch || categoryMatch || planMatch;
     });
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, subscriptions]);
 
   const handleSearchChange = (text: string) => {
     setSearchQuery(text);
-    if (text.trim().length > 0) {
+    const trimmed = text.trim();
+    if (trimmed.length > 0) {
       posthog?.capture("subscription_searched", {
-        query: text.trim(),
+        has_query: true,
+        query_length: trimmed.length,
       });
     }
   };
@@ -149,6 +156,15 @@ const Subscriptions = () => {
               subscription_id: subscription.id,
               subscription_name: subscription.name,
             });
+            setCancellingSubscriptionId(subscription.id);
+            setSubscriptions((prev) =>
+              prev.map((sub) =>
+                sub.id === subscription.id
+                  ? { ...sub, status: "cancelled" }
+                  : sub
+              )
+            );
+            setCancellingSubscriptionId(null);
             Alert.alert(
               "Subscription Cancelled",
               `Your ${subscription.name} subscription has been cancelled.`
@@ -229,6 +245,7 @@ const Subscriptions = () => {
           <SubscriptionCard
             {...item}
             expanded={expandedSubscriptionId === item.id}
+            isCancelling={cancellingSubscriptionId === item.id}
             onPress={() => {
               const isExpanded = expandedSubscriptionId === item.id;
               posthog?.capture("subscription_details_toggled", {
