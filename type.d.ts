@@ -32,6 +32,8 @@ declare global {
     expanded: boolean;
     onPress: () => void;
     onCancelPress?: () => void;
+    onModifyPlan?: () => void;
+    onModifyCard?: () => void;
     isCancelling?: boolean;
   }
 
@@ -51,6 +53,14 @@ declare global {
 
   interface ListHeadingProps {
     title: string;
+  }
+
+  interface SearchInputProps {
+    value: string;
+    onChangeText: (text: string) => void;
+    onClear?: () => void;
+    placeholder?: string;
+    className?: string;
   }
 }
 
