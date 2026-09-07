@@ -13,6 +13,7 @@ import {
 import { clsx } from "clsx";
 import dayjs from "dayjs";
 import { icons } from "@/constants/icons";
+import { posthog } from "@/lib/posthog";
 
 export interface CreateSubscriptionModalProps {
   visible: boolean;
@@ -55,10 +56,12 @@ const CreateSubscriptionModal = ({
   const [frequency, setFrequency] = useState<FrequencyType>("Monthly");
   const [category, setCategory] = useState<string>("Entertainment");
 
-  const parsedPrice = parseFloat(price);
+  const normalizedPrice = price.trim();
+  const parsedPrice = Number(normalizedPrice);
   const isValid =
     name.trim().length > 0 &&
-    !isNaN(parsedPrice) &&
+    !/^(?:\d+(?:\.\d+)?|\.\d+)$/.test(normalizedPrice) &&
+    +Number.isFinite(parsedPrice) &&
     parsedPrice > 0;
 
   const resetForm = () => {
@@ -97,6 +100,13 @@ const CreateSubscriptionModal = ({
     };
 
     onCreateSubscription(newSubscription);
+    posthog?.capture("subscription_created", {
+      subscription_name: name.trim(),
+      subscription_price: parsedPrice,
+      subscription_category: category,
+      subscription_frequency: frequency,
+    });
+
     handleClose();
   };
 
