@@ -12,6 +12,7 @@ import { styled } from "nativewind";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 import images from "@/constants/images";
 import { posthog } from "@/lib/posthog";
+import { useSubscriptionStore } from "@/lib/subscriptionStore";
 
 const SafeAreaView = styled(RNSafeAreaView);
 
@@ -37,6 +38,7 @@ const Settings = () => {
       await signOut();
       posthog?.capture("sign_out_completed");
       posthog?.reset();
+      useSubscriptionStore.getState().resetSubscriptions();
     } catch (err) {
       console.error("Sign out error:", err);
     } finally {
@@ -59,7 +61,9 @@ const Settings = () => {
           <View className="flex-row items-center gap-4">
             <Image source={avatarSource} className="size-16 rounded-full" />
             <View className="flex-1">
-              <Text className="text-xl font-sans-bold text-primary">{name}</Text>
+              <Text className="text-xl font-sans-bold text-primary">
+                {name}
+              </Text>
               <Text className="text-sm font-sans-medium text-muted-foreground">
                 {email}
               </Text>

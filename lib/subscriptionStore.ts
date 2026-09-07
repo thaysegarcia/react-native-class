@@ -5,6 +5,7 @@ interface SubscriptionStore {
   subscriptions: Subscription[];
   addSubscription: (subscription: Subscription) => void;
   setSubscriptions: (subscriptions: Subscription[]) => void;
+  resetSubscriptions: () => void;
 }
 
 export const useSubscriptionStore = create<SubscriptionStore>((set) => ({
@@ -12,4 +13,5 @@ export const useSubscriptionStore = create<SubscriptionStore>((set) => ({
   addSubscription: (subscription) =>
     set((state) => ({ subscriptions: [subscription, ...state.subscriptions] })),
   setSubscriptions: (subscriptions) => set({ subscriptions }),
+  resetSubscriptions: () => set({ subscriptions: HOME_SUBSCRIPTIONS }),
 }));

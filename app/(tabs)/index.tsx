@@ -52,11 +52,6 @@ export default function App() {
 
   const handleCreateSubscription = (newSubscription: Subscription) => {
     addSubscription(newSubscription);
-    posthog.capture("subscription_created", {
-      subscription_frequency: newSubscription.billing,
-      subscription_name: newSubscription.name,
-      subscription_price: newSubscription.price,
-    });
   };
 
   const handleModifyPlan = (subscription: Subscription) => {
