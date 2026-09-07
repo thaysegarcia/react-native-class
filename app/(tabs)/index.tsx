@@ -1,6 +1,6 @@
 import "@/global.css";
 import { useCallback, useState } from "react";
-import { Alert, FlatList, Image, Text, View } from "react-native";
+import { Alert, FlatList, Image, Pressable, Text, View } from "react-native";
 import { styled } from "nativewind";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
@@ -17,6 +17,7 @@ import { formatCurrency, formatSubscriptionDateTime } from "@/lib/utils";
 import ListHeading from "@/components/ListHeading";
 import UpcomingSubscriptionCard from "@/components/UpcomingSubscriptionCard";
 import SubscriptionCard from "@/components/SubscriptionCard";
+import CreateSubscriptionModal from "@/components/CreateSubscriptionModal";
 import { posthog } from "@/lib/posthog";
 
 const SafeAreaView = styled(RNSafeAreaView);
@@ -31,6 +32,7 @@ export default function App() {
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<
     string | null
   >(null);
+  const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -46,6 +48,10 @@ export default function App() {
     user?.primaryEmailAddress?.emailAddress?.split("@")[0] ||
     HOME_USER.name;
   const avatarSource = user?.imageUrl ? { uri: user.imageUrl } : images.avatar;
+
+  const handleCreateSubscription = (newSub: Subscription) => {
+    setSubscriptions((prev) => [newSub, ...prev]);
+  };
 
   const handleModifyPlan = (subscription: Subscription) => {
     posthog?.capture("subscription_modify_plan_clicked", {
@@ -143,7 +149,14 @@ export default function App() {
                 <Image source={avatarSource} className="home-avatar" />
                 <Text className="home-user-name">{userName}</Text>
               </View>
-              <Image source={icons.add} className="home-add-icon" />
+              <Pressable
+                onPress={() => setIsCreateModalVisible(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Add subscription"
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Image source={icons.add} className="home-add-icon" />
+              </Pressable>
             </View>
 
             {/*Balance Card*/}
@@ -212,6 +225,11 @@ export default function App() {
           <Text className="home-empty-state">No subscriptions yet.</Text>
         }
         contentContainerClassName="pb-30"
+      />
+      <CreateSubscriptionModal
+        visible={isCreateModalVisible}
+        onClose={() => setIsCreateModalVisible(false)}
+        onCreateSubscription={handleCreateSubscription}
       />
     </SafeAreaView>
   );
