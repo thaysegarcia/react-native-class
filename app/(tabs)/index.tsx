@@ -1,6 +1,6 @@
 import "@/global.css";
 import { useCallback, useState } from "react";
-import { Alert, FlatList, Image, Text, View } from "react-native";
+import { Alert, FlatList, Image, Pressable, Text, View } from "react-native";
 import { styled } from "nativewind";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
@@ -8,7 +8,6 @@ import { useUser } from "@clerk/expo";
 import images from "@/constants/images";
 import {
   HOME_BALANCE,
-  HOME_SUBSCRIPTIONS,
   HOME_USER,
   UPCOMING_SUBSCRIPTIONS,
 } from "@/constants/data";
@@ -17,20 +16,24 @@ import { formatCurrency, formatSubscriptionDateTime } from "@/lib/utils";
 import ListHeading from "@/components/ListHeading";
 import UpcomingSubscriptionCard from "@/components/UpcomingSubscriptionCard";
 import SubscriptionCard from "@/components/SubscriptionCard";
-import { posthog } from "@/lib/posthog";
+import CreateSubscriptionModal from "@/components/CreateSubscriptionModal";
+import { useSubscriptionStore } from "@/lib/subscriptionStore";
+import { usePostHog } from "posthog-react-native";
 
 const SafeAreaView = styled(RNSafeAreaView);
 
 export default function App() {
   const { user } = useUser();
-  const [subscriptions, setSubscriptions] =
-    useState<Subscription[]>(HOME_SUBSCRIPTIONS);
+  const posthog = usePostHog();
+  const { subscriptions, addSubscription, setSubscriptions } =
+    useSubscriptionStore();
   const [cancellingSubscriptionId, setCancellingSubscriptionId] = useState<
     string | null
   >(null);
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<
     string | null
   >(null);
+  const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -46,6 +49,10 @@ export default function App() {
     user?.primaryEmailAddress?.emailAddress?.split("@")[0] ||
     HOME_USER.name;
   const avatarSource = user?.imageUrl ? { uri: user.imageUrl } : images.avatar;
+
+  const handleCreateSubscription = (newSubscription: Subscription) => {
+    addSubscription(newSubscription);
+  };
 
   const handleModifyPlan = (subscription: Subscription) => {
     posthog?.capture("subscription_modify_plan_clicked", {
@@ -114,18 +121,16 @@ export default function App() {
               subscription_name: subscription.name,
             });
             setCancellingSubscriptionId(subscription.id);
-            setSubscriptions((prev) =>
-              prev.map((sub) =>
-                sub.id === subscription.id
-                  ? { ...sub, status: "cancelled" }
-                  : sub
+
+            setSubscriptions(
+              subscriptions.map((item) =>
+                item.id === subscription.id
+                  ? { ...item, status: "cancelled" }
+                  : item
               )
             );
+
             setCancellingSubscriptionId(null);
-            Alert.alert(
-              "Subscription Cancelled",
-              `Your ${subscription.name} subscription has been cancelled.`
-            );
           },
         },
       ]
@@ -143,7 +148,14 @@ export default function App() {
                 <Image source={avatarSource} className="home-avatar" />
                 <Text className="home-user-name">{userName}</Text>
               </View>
-              <Image source={icons.add} className="home-add-icon" />
+              <Pressable
+                onPress={() => setIsCreateModalVisible(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Add subscription"
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Image source={icons.add} className="home-add-icon" />
+              </Pressable>
             </View>
 
             {/*Balance Card*/}
@@ -212,6 +224,11 @@ export default function App() {
           <Text className="home-empty-state">No subscriptions yet.</Text>
         }
         contentContainerClassName="pb-30"
+      />
+      <CreateSubscriptionModal
+        visible={isCreateModalVisible}
+        onClose={() => setIsCreateModalVisible(false)}
+        onCreateSubscription={handleCreateSubscription}
       />
     </SafeAreaView>
   );

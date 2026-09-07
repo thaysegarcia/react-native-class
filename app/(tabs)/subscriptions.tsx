@@ -13,16 +13,15 @@ import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { clsx } from "clsx";
-import { HOME_SUBSCRIPTIONS } from "@/constants/data";
 import SubscriptionCard from "@/components/SubscriptionCard";
 import SearchInput from "@/components/SearchInput";
 import { posthog } from "@/lib/posthog";
+import { useSubscriptionStore } from "@/lib/subscriptionStore";
 
 const SafeAreaView = styled(RNSafeAreaView);
 
 const Subscriptions = () => {
-  const [subscriptions, setSubscriptions] =
-    useState<Subscription[]>(HOME_SUBSCRIPTIONS);
+  const { subscriptions, setSubscriptions } = useSubscriptionStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [cancellingSubscriptionId, setCancellingSubscriptionId] = useState<
@@ -44,7 +43,7 @@ const Subscriptions = () => {
     const unique = Array.from(
       new Set(
         subscriptions
-          .map((item) => item.category)
+          .map((subscription) => subscription.category)
           .filter((c): c is string => Boolean(c))
       )
     );
@@ -53,16 +52,18 @@ const Subscriptions = () => {
 
   const filteredSubscriptions = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    return subscriptions.filter((item) => {
+    return subscriptions.filter((subscription) => {
       const matchesCategory =
-        selectedCategory === "All" || item.category === selectedCategory;
+        selectedCategory === "All" ||
+        subscription.category === selectedCategory;
       if (!matchesCategory) return false;
 
       if (!query) return true;
-      const nameMatch = item.name.toLowerCase().includes(query);
+      const nameMatch = subscription.name.toLowerCase().includes(query);
       const categoryMatch =
-        item.category?.toLowerCase().includes(query) ?? false;
-      const planMatch = item.plan?.toLowerCase().includes(query) ?? false;
+        subscription.category?.toLowerCase().includes(query) ?? false;
+      const planMatch =
+        subscription.plan?.toLowerCase().includes(query) ?? false;
       return nameMatch || categoryMatch || planMatch;
     });
   }, [searchQuery, selectedCategory, subscriptions]);
@@ -157,25 +158,24 @@ const Subscriptions = () => {
               subscription_name: subscription.name,
             });
             setCancellingSubscriptionId(subscription.id);
-            setSubscriptions((prev) =>
-              prev.map((sub) =>
-                sub.id === subscription.id
-                  ? { ...sub, status: "cancelled" }
-                  : sub
+
+            setSubscriptions(
+              subscriptions.map((item) =>
+                item.id === subscription.id
+                  ? { ...item, status: "cancelled" }
+                  : item
               )
             );
+
             setCancellingSubscriptionId(null);
-            Alert.alert(
-              "Subscription Cancelled",
-              `Your ${subscription.name} subscription has been cancelled.`
-            );
           },
         },
       ]
     );
   };
 
-  const isFiltering = searchQuery.trim().length > 0 || selectedCategory !== "All";
+  const isFiltering =
+    searchQuery.trim().length > 0 || selectedCategory !== "All";
 
   return (
     <SafeAreaView className="flex-1 bg-background p-5 pb-5">

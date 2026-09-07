@@ -3,8 +3,10 @@ import { tokenCache } from "@clerk/expo/token-cache";
 import { SplashScreen, Stack, useRouter, useSegments } from "expo-router";
 import { useFonts } from "expo-font";
 import { useEffect, useRef } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PostHogProvider, usePostHog } from "posthog-react-native";
 
+import "../global.css";
 import { posthog } from "../lib/posthog";
 
 SplashScreen.preventAutoHideAsync();
@@ -92,5 +94,15 @@ export default function RootLayout() {
     </ClerkProvider>
   );
 
-  return posthog ? <PostHogProvider client={posthog}>{app}</PostHogProvider> : app;
+  const content = posthog ? (
+    <PostHogProvider client={posthog}>{app}</PostHogProvider>
+  ) : (
+    app
+  );
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      {content}
+    </GestureHandlerRootView>
+  );
 }
