@@ -8,7 +8,6 @@ import { useUser } from "@clerk/expo";
 import images from "@/constants/images";
 import {
   HOME_BALANCE,
-  HOME_SUBSCRIPTIONS,
   HOME_USER,
   UPCOMING_SUBSCRIPTIONS,
 } from "@/constants/data";
@@ -18,14 +17,16 @@ import ListHeading from "@/components/ListHeading";
 import UpcomingSubscriptionCard from "@/components/UpcomingSubscriptionCard";
 import SubscriptionCard from "@/components/SubscriptionCard";
 import CreateSubscriptionModal from "@/components/CreateSubscriptionModal";
-import { posthog } from "@/lib/posthog";
+import { useSubscriptionStore } from "@/lib/subscriptionStore";
+import { usePostHog } from "posthog-react-native";
 
 const SafeAreaView = styled(RNSafeAreaView);
 
 export default function App() {
   const { user } = useUser();
-  const [subscriptions, setSubscriptions] =
-    useState<Subscription[]>(HOME_SUBSCRIPTIONS);
+  const posthog = usePostHog();
+  const { subscriptions, addSubscription, setSubscriptions } =
+    useSubscriptionStore();
   const [cancellingSubscriptionId, setCancellingSubscriptionId] = useState<
     string | null
   >(null);
@@ -49,8 +50,13 @@ export default function App() {
     HOME_USER.name;
   const avatarSource = user?.imageUrl ? { uri: user.imageUrl } : images.avatar;
 
-  const handleCreateSubscription = (newSub: Subscription) => {
-    setSubscriptions((prev) => [newSub, ...prev]);
+  const handleCreateSubscription = (newSubscription: Subscription) => {
+    addSubscription(newSubscription);
+    posthog.capture("subscription_created", {
+      subscription_frequency: newSubscription.billing,
+      subscription_name: newSubscription.name,
+      subscription_price: newSubscription.price,
+    });
   };
 
   const handleModifyPlan = (subscription: Subscription) => {
@@ -120,18 +126,16 @@ export default function App() {
               subscription_name: subscription.name,
             });
             setCancellingSubscriptionId(subscription.id);
-            setSubscriptions((prev) =>
-              prev.map((sub) =>
-                sub.id === subscription.id
-                  ? { ...sub, status: "cancelled" }
-                  : sub
+
+            setSubscriptions(
+              subscriptions.map((item) =>
+                item.id === subscription.id
+                  ? { ...item, status: "cancelled" }
+                  : item
               )
             );
+
             setCancellingSubscriptionId(null);
-            Alert.alert(
-              "Subscription Cancelled",
-              `Your ${subscription.name} subscription has been cancelled.`
-            );
           },
         },
       ]

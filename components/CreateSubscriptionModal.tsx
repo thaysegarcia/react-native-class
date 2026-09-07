@@ -60,8 +60,8 @@ const CreateSubscriptionModal = ({
   const parsedPrice = Number(normalizedPrice);
   const isValid =
     name.trim().length > 0 &&
-    !/^(?:\d+(?:\.\d+)?|\.\d+)$/.test(normalizedPrice) &&
-    +Number.isFinite(parsedPrice) &&
+    /^(?:\d+(?:\.\d+)?|\.\d+)$/.test(normalizedPrice) &&
+    Number.isFinite(parsedPrice) &&
     parsedPrice > 0;
 
   const resetForm = () => {
@@ -87,7 +87,7 @@ const CreateSubscriptionModal = ({
 
     const newSubscription: Subscription = {
       id: `sub-${Date.now()}`,
-      icon: icons.wallet,
+      icon: icons.plus,
       name: name.trim(),
       price: parsedPrice,
       currency: "USD",
